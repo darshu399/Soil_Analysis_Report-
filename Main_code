@@ -1,0 +1,97 @@
+# Import libraries
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+from matplotlib.backends.backend_pdf import PdfPages
+
+# Generate simulated soil data
+np.random.seed(42)
+data = {
+    "Soil_ID": range(1, 101),
+    "Fertility_Level": np.random.uniform(50, 100, 100),
+    "Moisture_Level": np.random.uniform(20, 80, 100),
+    "pH_Level": np.random.uniform(5.5, 8.0, 100),
+}
+
+df = pd.DataFrame(data)
+
+# Define crop recommendations based on pH and moisture levels
+def recommend_crop(row):
+    if 6.0 <= row["pH_Level"] <= 7.5:
+        if row["Moisture_Level"] > 60:
+            return "Rice"
+        elif row["Moisture_Level"] > 40:
+            return "Wheat"
+        else:
+            return "Millets"
+    elif row["pH_Level"] < 6.0:
+        return "Vegetables"
+    else:
+        return "Fruits"
+
+df["Recommended_Crop"] = df.apply(recommend_crop, axis=1)
+
+# Create a PDF for the visualizations
+with PdfPages("Soil_Analysis_Report.pdf") as pdf:
+    
+    # Bar Chart: Fertility Levels
+    plt.figure(figsize=(10, 6))
+    sns.barplot(x="Soil_ID", y="Fertility_Level", data=df, palette="viridis")
+    plt.title("Soil Fertility Levels", fontsize=16)
+    plt.xlabel("Soil ID", fontsize=12)
+    plt.ylabel("Fertility Level", fontsize=12)
+    plt.xticks([])
+    pdf.savefig()  # Save the figure to PDF
+    plt.close()
+    
+    # Scatter Plot: pH vs. Moisture with Crop Recommendations
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x="pH_Level", y="Moisture_Level", hue="Recommended_Crop", data=df, palette="Set2")
+    plt.title("pH Level vs. Moisture Level with Crop Recommendations", fontsize=16)
+    plt.xlabel("pH Level", fontsize=12)
+    plt.ylabel("Moisture Level", fontsize=12)
+    plt.legend(title="Recommended Crop")
+    pdf.savefig()
+    plt.close()
+    
+    # Pie Chart: Crop Recommendation Distribution
+    crop_counts = df["Recommended_Crop"].value_counts()
+    plt.figure(figsize=(8, 8))
+    plt.pie(
+        x=crop_counts.values,
+        labels=crop_counts.index.tolist(),
+        autopct="%1.1f%%",
+        startangle=140,
+        colors=sns.color_palette("pastel")
+    )
+    plt.title("Crop Recommendations Distribution", fontsize=16)
+    pdf.savefig()
+    plt.close()
+    
+    # Histogram: Moisture Levels
+    plt.figure(figsize=(10, 6))
+    sns.histplot(df["Moisture_Level"], kde=True, color="skyblue", bins=10)
+    plt.title("Distribution of Moisture Levels", fontsize=16)
+    plt.xlabel("Moisture Level", fontsize=12)
+    plt.ylabel("Frequency", fontsize=12)
+    pdf.savefig()
+    plt.close()
+    
+    # Heatmap: Correlation between variables
+    plt.figure(figsize=(8, 6))
+    correlation_matrix = df[["Fertility_Level", "Moisture_Level", "pH_Level"]].corr()
+    sns.heatmap(correlation_matrix, annot=True, cmap="coolwarm", fmt=".2f")
+    plt.title("Correlation Matrix of Soil Properties", fontsize=16)
+    pdf.savefig()
+    plt.close()
+    
+    # Add a concluding page
+    plt.figure(figsize=(8, 4))
+    plt.text(0.5, 0.5, "Soil Analysis Report\nGenerated using Python and Matplotlib",
+             fontsize=20, ha="center", va="center")
+    plt.axis("off")
+    pdf.savefig()
+    plt.close()
+
+print("PDF report 'Soil_Analysis_Report.pdf' has been generated!")
